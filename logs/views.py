@@ -18,7 +18,7 @@ def receive_log(request):
     item_quantity = request.data.get('item_quantity')
 
     if not store_id:
-        return Response({'erro': f'Incomplete data: {pharmacy} - {city}'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Incomplete data'}, status=status.HTTP_400_BAD_REQUEST)
 
     log, created = LogSync.objects.update_or_create(
         store_id=store_id,

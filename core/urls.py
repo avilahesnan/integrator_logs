@@ -16,13 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
-from logs.views import receive_log, views_logs, index
+from logs.views import receive_log, last_logs, pharmacy_logs, index
 
 
 urlpatterns = [
     path('', index, name='index'),
     path('admin-management/', admin.site.urls),
     path('api/log-sync/', receive_log, name='receive_log'),
-    path('api/logs/', views_logs, name='views_logs'),
+    path('api/last-logs/', last_logs, name='last_logs'),
+    path('api/logs/<str:store_id>/', pharmacy_logs, name='pharmacy_logs'),
     re_path(r'^.*$', index),
 ]

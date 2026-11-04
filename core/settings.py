@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -132,6 +133,68 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-CORS_ALLOWED_ORIGINS = [
+def _csv_env(name, default):
+    """Lê uma variável de ambiente separada por vírgula."""
+    raw = os.getenv(name, '') or ''
+    values = [item.strip() for item in raw.split(',') if item.strip()]
+
+    return values or default
+
+
+# Origens liberadas no CORS. Configurável por ambiente para que o painel possa
+# ser servido de qualquer host sem mexer no código.
+CORS_ALLOWED_ORIGINS = _csv_env('CORS_ALLOWED_ORIGINS', [
     'https://logs-view.netlify.app',
-]
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+])
+
+# O painel envia o token administrativo neste cabeçalho; sem liberá-lo aqui o
+# navegador bloqueia as requisições de cadastro e edição.
+CORS_ALLOW_HEADERS = list(default_headers) + ['x-admin-token']
+
+CSRF_TRUSTED_ORIGINS = _csv_env('CSRF_TRUSTED_ORIGINS', CORS_ALLOWED_ORIGINS)
+
+
+# Integração com o Google Sheets e painel administrativo.
+# Todos os valores vêm do ambiente; nada sensível fica no código-fonte.
+#   GOOGLE_SHEETS_ID             id da planilha
+#   GOOGLE_SERVICE_ACCOUNT_JSON  JSON completo da conta de serviço (inline)
+#   GOOGLE_SERVICE_ACCOUNT_FILE  ou o caminho do arquivo com esse JSON
+#                                (padrão /etc/secrets/google-credentials.json)
+#   SHEETS_CADASTROS_TAB         nome da aba de cadastros      (padrão Cadastros)
+#   SHEETS_MONITORAMENTO_TAB     nome da aba de monitoramento  (padrão Monitoramento)
+#   SHEETS_SYNC_ENABLED          liga/desliga a sincronização  (padrão True)
+#   SHEETS_EXPORT_HOUR           hora local da exportação      (padrão 23)
+#   MONITOR_LATE_MINUTES         minutos até marcar atraso     (padrão 45)
+#   MONITOR_OFFLINE_MINUTES      minutos até marcar sem comunicação (padrão 1440)
+#   ADMIN_API_TOKEN              token das rotas de escrita
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '[{levelname}] {asctime} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'logs': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
